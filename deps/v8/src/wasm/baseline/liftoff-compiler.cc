@@ -1656,6 +1656,13 @@ class LiftoffCompiler {
     __ PushRegister(kWasmI32, result);
   }
 
+  void CallNative(FullDecoder* decoder,
+                  const CallFunctionImmediate<validate>& imm,
+                  const Value args[], Value returns[]) {
+    // TODO (amir) To be implemented
+    unsupported(decoder, "TODO");
+  }
+
   void CallDirect(FullDecoder* decoder,
                   const CallFunctionImmediate<validate>& imm,
                   const Value args[], Value returns[]) {

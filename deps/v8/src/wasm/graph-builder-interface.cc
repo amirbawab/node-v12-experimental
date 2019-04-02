@@ -389,6 +389,23 @@ class WasmGraphBuildingInterface {
     LoadContextIntoSsa(ssa_env_);
   }
 
+  void CallNative(FullDecoder* decoder,
+                  const CallFunctionImmediate<validate>& imm,
+                  const Value args[], Value returns[]) {
+    int param_count = static_cast<int>(imm.sig->parameter_count());
+    TFNode** arg_nodes = builder_->Buffer(param_count + 1);
+    TFNode** return_nodes = nullptr;
+    arg_nodes[0] = nullptr;
+    for (int i = 0; i < param_count; ++i) {
+      arg_nodes[i + 1] = args[i].node;
+    }
+    BUILD(CallNative, imm.index, arg_nodes, &return_nodes, decoder->position());
+    int return_count = static_cast<int>(imm.sig->return_count());
+    for (int i = 0; i < return_count; ++i) {
+      returns[i].node = return_nodes[i];
+    }
+  }
+
   void CallDirect(FullDecoder* decoder,
                   const CallFunctionImmediate<validate>& imm,
                   const Value args[], Value returns[]) {

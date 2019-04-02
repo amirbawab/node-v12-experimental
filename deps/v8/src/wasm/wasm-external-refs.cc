@@ -256,6 +256,16 @@ void memory_fill_wrapper(Address dst, uint32_t value, uint32_t size) {
   memset(reinterpret_cast<void*>(dst), value, size);
 }
 
+void native_call_wrapper(Address dst, uint32_t value, uint32_t size) {
+  DCHECK(dst + size >= dst);
+  uint32_t* dst32 = reinterpret_cast<uint32_t*>(dst);
+  uint32_t value32 = static_cast<uint32_t>(value);
+  size = 10;
+  for (; size > 0; size--) {
+    *dst32++ = value32;
+  }
+}
+
 static WasmTrapCallbackForTesting wasm_trap_callback_for_testing = nullptr;
 
 void set_trap_callback_for_testing(WasmTrapCallbackForTesting callback) {

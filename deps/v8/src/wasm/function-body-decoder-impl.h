@@ -659,6 +659,8 @@ struct ControlBase {
   F(MemoryGrow, const Value& value, Value* result)                            \
   F(CallDirect, const CallFunctionImmediate<validate>& imm,                   \
     const Value args[], Value returns[])                                      \
+  F(CallNative, const CallFunctionImmediate<validate>& imm,                   \
+    const Value args[], Value returns[])                                      \
   F(CallIndirect, const Value& index,                                         \
     const CallIndirectImmediate<validate>& imm, const Value args[],           \
     Value returns[])                                                          \
@@ -818,6 +820,7 @@ class WasmDecoder : public Decoder {
           break;
         }
         case kExprMemoryGrow:
+        case kExprCallNativeFunction:
         case kExprCallFunction:
         case kExprCallIndirect:
           // Add instance cache nodes to the assigned set.
@@ -1102,6 +1105,7 @@ class WasmDecoder : public Decoder {
         return 1 + imm.length;
       }
 
+      case kExprCallNativeFunction:
       case kExprCallFunction: {
         CallFunctionImmediate<validate> imm(decoder, pc);
         return 1 + imm.length;
@@ -1296,6 +1300,7 @@ class WasmDecoder : public Decoder {
       case kExprRefNull:
       case kExprMemorySize:
         return {0, 1};
+      case kExprCallNativeFunction:
       case kExprCallFunction: {
         CallFunctionImmediate<validate> imm(this, pc);
         CHECK(Complete(pc, imm));
@@ -2038,6 +2043,16 @@ class WasmFullDecoder : public WasmDecoder<validate> {
           auto* result = Push(kWasmI32);
           len = 1 + imm.length;
           CALL_INTERFACE_IF_REACHABLE(CurrentMemoryPages, result);
+          break;
+        }
+        case kExprCallNativeFunction: {
+          CallFunctionImmediate<validate> imm(this, this->pc_);
+          len = 1 + imm.length;
+          if (!this->Validate(this->pc_, imm)) break;
+          // TODO(clemensh): Better memory management.
+          PopArgs(imm.sig);
+          auto* returns = PushReturns(imm.sig);
+          CALL_INTERFACE_IF_REACHABLE(CallNative, imm, args_.data(), returns);
           break;
         }
         case kExprCallFunction: {

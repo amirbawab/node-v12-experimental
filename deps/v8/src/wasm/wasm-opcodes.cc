@@ -136,6 +136,7 @@ const char* WasmOpcodes::OpcodeName(WasmOpcode opcode) {
     CASE_OP(BrTable, "br_table")
     CASE_OP(Return, "return")
     CASE_OP(CallFunction, "call")
+    CASE_OP(CallNativeFunction, "call_native")
     CASE_OP(CallIndirect, "call_indirect")
     CASE_OP(Drop, "drop")
     CASE_OP(Select, "select")

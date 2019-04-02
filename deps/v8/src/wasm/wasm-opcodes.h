@@ -40,6 +40,7 @@ bool IsJSCompatibleSignature(const FunctionSig* sig, bool hasBigIntFeature);
 // Constants, locals, globals, and calls.
 #define FOREACH_MISC_OPCODE(V) \
   V(CallFunction, 0x10, _)     \
+  V(CallNativeFunction, 0xe7, _)     \
   V(CallIndirect, 0x11, _)     \
   V(Drop, 0x1a, _)             \
   V(Select, 0x1b, _)           \

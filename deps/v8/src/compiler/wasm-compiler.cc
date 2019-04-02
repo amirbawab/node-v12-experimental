@@ -2749,6 +2749,24 @@ Node* WasmGraphBuilder::BuildImportCall(wasm::FunctionSig* sig, Node** args,
                        untrusted_code_mitigations_ ? kRetpoline : kNoRetpoline);
 }
 
+Node* WasmGraphBuilder::CallNative(uint32_t index, Node** args, Node*** rets,
+                                   wasm::WasmCodePosition position) {
+  DCHECK_NULL(args[0]);
+  wasm::FunctionSig* funcSig = env_->module->functions[index].sig;
+
+  Node* dst = Int32Constant(0);
+  // TODO input another size (maybe the page size?)
+  Node* size = Int32Constant(1);
+  dst = BoundsCheckMemRange(dst, size, position);
+  Node* dummyValue = Int32Constant(13);
+
+  Node* function = graph()->NewNode(mcgraph()->common()->ExternalConstant(ExternalReference::wasm_native_call()));
+  // TODO Use funcSig to determine the types
+  MachineType sig_types[] = {MachineType::Pointer(), MachineType::Uint32(), MachineType::Uint32()};
+  MachineSignature sig(0, 3, sig_types);
+  return BuildCCall(&sig, function, dst, dummyValue, size);
+}
+
 Node* WasmGraphBuilder::CallDirect(uint32_t index, Node** args, Node*** rets,
                                    wasm::WasmCodePosition position) {
   DCHECK_NULL(args[0]);
