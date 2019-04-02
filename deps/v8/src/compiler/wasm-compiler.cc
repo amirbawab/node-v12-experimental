@@ -2749,22 +2749,62 @@ Node* WasmGraphBuilder::BuildImportCall(wasm::FunctionSig* sig, Node** args,
                        untrusted_code_mitigations_ ? kRetpoline : kNoRetpoline);
 }
 
-Node* WasmGraphBuilder::CallNative(uint32_t index, Node** args, Node*** rets,
+Node* WasmGraphBuilder::CallNative(uint32_t index, Node** args, Node** rets,
                                    wasm::WasmCodePosition position) {
-  DCHECK_NULL(args[0]);
-  wasm::FunctionSig* funcSig = env_->module->functions[index].sig;
+  // Call a native function with a signature determined by the
+  // wasm function signature. Stack will be composed of return values
+  // followed by parameter values
 
-  Node* dst = Int32Constant(0);
-  // TODO input another size (maybe the page size?)
-  Node* size = Int32Constant(1);
-  dst = BoundsCheckMemRange(dst, size, position);
-  Node* dummyValue = Int32Constant(13);
+  wasm::FunctionSig* funcSig = env_->module->functions[index].sig;
+  DCHECK_GE(wasm::kV8MaxWasmFunctionMultiReturns, funcSig->return_count());
+  DCHECK_GE(wasm:: kV8MaxWasmFunctionParams, funcSig->parameter_count());
+
+  // Compute total stack slot size
+  int returnsStackSlotSize = 0;
+  for(int i=0; i < funcSig->return_count(); ++i) {
+    returnsStackSlotSize += wasm::ValueTypes::ElementSizeInBytes(funcSig->GetReturn(i));
+  }
+  int paramsStackSlotSize = 0;
+  for(int i=0; i < funcSig->parameter_count(); ++i) {
+    paramsStackSlotSize += wasm::ValueTypes::ElementSizeInBytes(funcSig->GetParam(i));
+  }
+
+  // Store parameters in stack
+  Node* stack_slot = graph()->NewNode(mcgraph()->machine()->StackSlot(returnsStackSlotSize + paramsStackSlotSize));
+  int paramStackSlotIndex = returnsStackSlotSize;
+  for(int i=0; i < funcSig->parameter_count(); ++i) {
+    auto type = funcSig->GetParam(i);
+    SetEffect(graph()->NewNode(
+        mcgraph()->machine()->Store(StoreRepresentation(wasm::ValueTypes::MachineRepresentationFor(type),
+                                                        kNoWriteBarrier)),
+        stack_slot, mcgraph()->Int32Constant(paramStackSlotIndex), args[i], Effect(), Control()));
+    paramStackSlotIndex += wasm::ValueTypes::ElementSizeInBytes(type);
+  }
+
+  Node* linearMemory = BoundsCheckMemRange(mcgraph()->Int32Constant(0),
+      // TODO input another size value (maybe page size?)
+      mcgraph()->Int32Constant(0), position);
 
   Node* function = graph()->NewNode(mcgraph()->common()->ExternalConstant(ExternalReference::wasm_native_call()));
-  // TODO Use funcSig to determine the types
-  MachineType sig_types[] = {MachineType::Pointer(), MachineType::Uint32(), MachineType::Uint32()};
-  MachineSignature sig(0, 3, sig_types);
-  return BuildCCall(&sig, function, dst, dummyValue, size);
+  MachineType sig_types[] = {
+      MachineType::Int32(),   // wasm_native_call return type
+      MachineType::Pointer(), // Linear memory address
+      MachineType::Pointer()  // Stack slot address (return slots followed by parameters slots)
+  };
+  MachineSignature sig(1, 2, sig_types);
+  Node* call = BuildCCall(&sig, function, linearMemory, stack_slot);
+  ZeroCheck32(wasm::kTrapFuncInvalid, call, position);
+
+  int returnStackSlotIndex = 0;
+  for(int i=0; i < funcSig->return_count(); ++i) {
+    auto retType = funcSig->GetReturn(i);
+    rets[i] = SetEffect(graph()->NewNode(
+        mcgraph()->machine()->Load(wasm::ValueTypes::MachineTypeFor(retType)), stack_slot,
+        mcgraph()->Int32Constant(returnStackSlotIndex), Effect(), Control()));
+    returnStackSlotIndex += wasm::ValueTypes::ElementSizeInBytes(retType);
+  }
+
+  return call;
 }
 
 Node* WasmGraphBuilder::CallDirect(uint32_t index, Node** args, Node*** rets,
