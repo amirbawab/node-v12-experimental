@@ -1659,8 +1659,7 @@ class LiftoffCompiler {
   void CallNative(FullDecoder* decoder,
                   const CallFunctionImmediate<validate>& imm,
                   const Value args[], Value returns[]) {
-    // TODO (amir) To be implemented
-    unsupported(decoder, "TODO");
+    unsupported(decoder, "call_native");
   }
 
   void CallDirect(FullDecoder* decoder,
