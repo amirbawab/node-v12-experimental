@@ -265,7 +265,7 @@ class WasmGraphBuilder {
   Node* ReturnVoid();
   Node* Unreachable(wasm::WasmCodePosition position);
 
-  Node* CallNative(uint32_t index, Node** args, Node** rets,
+  Node* CallNative(uint32_t functionId, uint32_t sig_index, Node** args, Node** rets,
                    wasm::WasmCodePosition position);
   Node* CallDirect(uint32_t index, Node** args, Node*** rets,
                    wasm::WasmCodePosition position);

@@ -1657,7 +1657,8 @@ class LiftoffCompiler {
   }
 
   void CallNative(FullDecoder* decoder,
-                  const CallFunctionImmediate<validate>& imm,
+                  const CallNativeIndexImmediate<validate> &immIndex,
+                  const CallNativeImmediate<validate> &immType,
                   const Value args[], Value returns[]) {
     unsupported(decoder, "call_native");
   }

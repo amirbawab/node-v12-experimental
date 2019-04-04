@@ -256,9 +256,9 @@ void memory_fill_wrapper(Address dst, uint32_t value, uint32_t size) {
   memset(reinterpret_cast<void*>(dst), value, size);
 }
 
-int32_t native_call_wrapper(Address mem, Address data) {
+int32_t native_call_wrapper(uint32_t functionIndex, Address mem, Address data) {
   Address ret1 = data;
-  WriteUnalignedValue<int32_t>(ret1, 42);
+  WriteUnalignedValue<int32_t>(ret1, 100000);
   return 1;
 }
 
