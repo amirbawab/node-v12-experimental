@@ -31,17 +31,43 @@ inline void WriteValueAndAdvance(T** address, T val) {
   *address += sizeof(T);
 }
 
+/*********************
+ * Defines
+ *********************/
+#define ___ void
+#define I32 int32_t
+#define I64 int64_t
+#define F32 float
+#define F64 double
+
+#define FOREACH_NON_TEMPLATE_FUNCTION(V) \
+    V(print_help, "Print help message", "", "", ___, 0)
+
+#define FOREACH_TEMPLATE_FUNCTION(V) \
+  V(matrix_multiplication, "Matrix multiplication for i32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", I32, 1) \
+  V(matrix_multiplication, "Matrix multiplication for i64", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", I64, 2) \
+  V(matrix_multiplication, "Matrix multiplication for f32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", F32, 3) \
+  V(matrix_multiplication, "Matrix multiplication for f64", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", F64, 4) \
+  V(print_mem, "Print linear memory as i32", "offset:i32 size:i32", "", I32, 5) \
+  V(print_mem, "Print linear memory as i64", "offset:i32 size:i32", "", I64, 6) \
+  V(print_mem, "Print linear memory as f32", "offset:i32 size:i32", "", F32, 7) \
+  V(print_mem, "Print linear memory as f65", "offset:i32 size:i32", "", F64, 8)
+
+#define FOR_ALL_FUNCTIONS(V) \
+  FOREACH_NON_TEMPLATE_FUNCTION(V) \
+  FOREACH_TEMPLATE_FUNCTION(V)
+
 /************************
  * Matrix Multiplication
  ************************/
 template <class T>
 void call_matrix_multiplication(byte* memByte, byte* dataByte) {
-  int32_t mat1Offset = ReadValueAndAdvance<int32_t>(&dataByte);
-  int32_t mat2Offset = ReadValueAndAdvance<int32_t>(&dataByte);
-  int32_t resOffset = ReadValueAndAdvance<int32_t>(&dataByte);
-  int32_t m = ReadValueAndAdvance<int32_t>(&dataByte);
-  int32_t n = ReadValueAndAdvance<int32_t>(&dataByte);
-  int32_t p = ReadValueAndAdvance<int32_t>(&dataByte);
+  I32 mat1Offset = ReadValueAndAdvance<I32>(&dataByte);
+  I32 mat2Offset = ReadValueAndAdvance<I32>(&dataByte);
+  I32 resOffset = ReadValueAndAdvance<I32>(&dataByte);
+  I32 m = ReadValueAndAdvance<I32>(&dataByte);
+  I32 n = ReadValueAndAdvance<I32>(&dataByte);
+  I32 p = ReadValueAndAdvance<I32>(&dataByte);
 
   T* mat1 = reinterpret_cast<T*>(memByte + mat1Offset);
   T* mat2 = reinterpret_cast<T*>(memByte + mat2Offset);
@@ -63,35 +89,13 @@ void call_matrix_multiplication(byte* memByte, byte* dataByte) {
  ********/
 template<class T>
 void call_print_mem(byte* memByte, byte* dataByte) {
-  int32_t offset = ReadValueAndAdvance<int32_t>(&dataByte);
-  int32_t size = ReadValueAndAdvance<int32_t>(&dataByte);
+  I32 offset = ReadValueAndAdvance<I32>(&dataByte);
+  I32 size = ReadValueAndAdvance<I32>(&dataByte);
   for(int i=0; i < size; ++i) {
     std::cout << *(reinterpret_cast<T*>(memByte + offset + i * sizeof(T))) << " ";
   }
   std::cout << std::endl;
 }
-
-/*********************
- * Defines
- *********************/
-#define ___ void
-
-#define FOREACH_NON_TEMPLATE_FUNCTION(V) \
-    V(print_help, "Print help message", "", "", ___, 0)
-
-#define FOREACH_TEMPLATE_FUNCTION(V) \
-  V(matrix_multiplication, "Matrix multiplication for i32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", int32_t, 1) \
-  V(matrix_multiplication, "Matrix multiplication for i64", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", int64_t, 2) \
-  V(matrix_multiplication, "Matrix multiplication for f32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", float, 3) \
-  V(matrix_multiplication, "Matrix multiplication for f64", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", double, 4) \
-  V(print_mem, "Print linear memory as i32", "offset:i32 size:i32", "", int32_t, 5) \
-  V(print_mem, "Print linear memory as i64", "offset:i32 size:i32", "", int64_t, 6) \
-  V(print_mem, "Print linear memory as f32", "offset:i32 size:i32", "", float, 7) \
-  V(print_mem, "Print linear memory as f65", "offset:i32 size:i32", "", double, 8)
-
-#define FOR_ALL_FUNCTIONS(V) \
-  FOREACH_NON_TEMPLATE_FUNCTION(V) \
-  FOREACH_TEMPLATE_FUNCTION(V)
 
 /*********************
  * Print help message
