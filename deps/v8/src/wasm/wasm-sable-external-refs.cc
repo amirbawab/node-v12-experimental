@@ -5,7 +5,6 @@ namespace v8 {
 namespace internal {
 namespace wasm {
 
-
 /********************
  * Helper functions
  ********************/
@@ -37,7 +36,7 @@ inline void WriteValueAndAdvance(T** address, T val) {
  ************************/
 template <class T>
 void call_matrix_multiplication(byte* memByte, byte* dataByte) {
-  auto mat1Offset = ReadValueAndAdvance<int32_t>(&dataByte);
+  int32_t mat1Offset = ReadValueAndAdvance<int32_t>(&dataByte);
   int32_t mat2Offset = ReadValueAndAdvance<int32_t>(&dataByte);
   int32_t resOffset = ReadValueAndAdvance<int32_t>(&dataByte);
   int32_t m = ReadValueAndAdvance<int32_t>(&dataByte);
@@ -72,40 +71,62 @@ void call_print_mem(byte* memByte, byte* dataByte) {
   std::cout << std::endl;
 }
 
-/*******************
- * Native functions
- *******************/
+/*********************
+ * Defines
+ *********************/
+#define ___ void
 
 #define FOREACH_NON_TEMPLATE_FUNCTION(V) \
-    /*non-template functions*/
+    V(print_help, "Print help message", "", "", ___, 0)
 
 #define FOREACH_TEMPLATE_FUNCTION(V) \
-  V(matrix_multiplication, int32_t, 0) \
-  V(matrix_multiplication, int64_t, 1) \
-  V(matrix_multiplication, float, 2) \
-  V(matrix_multiplication, double, 3) \
-  V(print_mem, int32_t, 4) \
-  V(print_mem, int64_t, 5) \
-  V(print_mem, float, 6) \
-  V(print_mem, double, 7)
+  V(matrix_multiplication, "Matrix multiplication for i32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", int32_t, 1) \
+  V(matrix_multiplication, "Matrix multiplication for i64", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", int64_t, 2) \
+  V(matrix_multiplication, "Matrix multiplication for f32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", float, 3) \
+  V(matrix_multiplication, "Matrix multiplication for f64", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", double, 4) \
+  V(print_mem, "Print linear memory as i32", "offset:i32 size:i32", "", int32_t, 5) \
+  V(print_mem, "Print linear memory as i64", "offset:i32 size:i32", "", int64_t, 6) \
+  V(print_mem, "Print linear memory as f32", "offset:i32 size:i32", "", float, 7) \
+  V(print_mem, "Print linear memory as f65", "offset:i32 size:i32", "", double, 8)
 
 #define FOR_ALL_FUNCTIONS(V) \
   FOREACH_NON_TEMPLATE_FUNCTION(V) \
   FOREACH_TEMPLATE_FUNCTION(V)
+
+/*********************
+ * Print help message
+ *********************/
+void call_print_help(byte* memByte, byte* dataByte) {
+  std::cout << "Native functions:" << std::endl;
+#define PRINT_MESSAGE(function, description, params, rets, type, id) \
+  std::cout << "  " << id << ": " << #function << " - " << description << std::endl; \
+  if(strlen(params) > 0) { \
+    std::cout << "        params: " << params << std::endl; \
+  } \
+  if(strlen(rets) > 0) { \
+    std::cout << "        returns: " << rets << std::endl; \
+  }
+  FOR_ALL_FUNCTIONS(PRINT_MESSAGE)
+#undef PRINT_MESSAGE
+}
+
+/*******************
+ * Native functions
+ *******************/
 
 int native_function_gateway(uint32_t functionId, Address mem, Address data) {
   // Reinterpret as byte addresses
   byte* dataByte = reinterpret_cast<byte*>(data);
   byte* memByte = reinterpret_cast<byte*>(mem);
   switch (functionId) {
-#define SWITCH_CALL_SABLE_FUNCTION(function, type, id) \
+#define SWITCH_CALL_SABLE_FUNCTION(function, description, params, rets, type, id) \
     case id: \
       call_##function<type>(memByte, dataByte); \
       break;
   FOREACH_TEMPLATE_FUNCTION(SWITCH_CALL_SABLE_FUNCTION)
 #undef SWITCH_CALL_SABLE_FUNCTION
 
-#define SWITCH_CALL_SABLE_FUNCTION(function, id) \
+#define SWITCH_CALL_SABLE_FUNCTION(function, description, params, rets, type, id) \
     case id: \
       call_##function(memByte, dataByte); \
       break;
