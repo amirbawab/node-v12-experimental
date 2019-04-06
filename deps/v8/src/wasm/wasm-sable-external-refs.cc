@@ -1,4 +1,5 @@
 #include "src/wasm/wasm-sable-external-refs.h"
+#include "src/base/ieee754.h"
 #include <iostream>
 
 namespace v8 {
@@ -41,7 +42,8 @@ inline void WriteValueAndAdvance(T** address, T val) {
 #define F64 double
 
 #define FOREACH_NON_TEMPLATE_FUNCTION(V) \
-    V(print_help, "Print help message", "", "", ___, 0)
+    V(print_help, "Print help message", "", "", ___, 0) \
+    V(exp, "Exponential function", "x:f64", "f64", ___, 9)
 
 #define FOREACH_TEMPLATE_FUNCTION(V) \
   V(matrix_multiplication, "Matrix multiplication for i32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", I32, 1) \
@@ -97,6 +99,14 @@ void call_print_mem(byte* memByte, byte* dataByte) {
   std::cout << std::endl;
 }
 
+/*****************
+ * Math functions
+ *****************/
+void call_exp(byte* memByte, byte* dataByte) {
+  F64 x = ReadValueAndAdvance<F64>(&dataByte);
+  WriteValue<F64>(reinterpret_cast<F64*>(dataByte), base::ieee754::exp(x));
+}
+
 /*********************
  * Print help message
  *********************/
@@ -126,20 +136,19 @@ int native_function_gateway(uint32_t functionId, Address mem, Address data) {
 #define SWITCH_CALL_SABLE_FUNCTION(function, description, params, rets, type, id) \
     case id: \
       call_##function<type>(memByte, dataByte); \
-      break;
+      return 1;
   FOREACH_TEMPLATE_FUNCTION(SWITCH_CALL_SABLE_FUNCTION)
 #undef SWITCH_CALL_SABLE_FUNCTION
 
 #define SWITCH_CALL_SABLE_FUNCTION(function, description, params, rets, type, id) \
     case id: \
       call_##function(memByte, dataByte); \
-      break;
+      return 1;
     FOREACH_NON_TEMPLATE_FUNCTION(SWITCH_CALL_SABLE_FUNCTION)
 #undef SWITCH_CALL_SABLE_FUNCTION
       default:
       return 0;
   }
-  return 1;
 }
 
 }  // namespace wasm
