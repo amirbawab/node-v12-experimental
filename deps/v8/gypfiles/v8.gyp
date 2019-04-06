@@ -585,8 +585,26 @@
       'include_dirs': [
         '..',
         '<(DEPTH)',
-        '<(SHARED_INTERMEDIATE_DIR)'
+        '<(SHARED_INTERMEDIATE_DIR)',
+        '../third_party/opencv/build/install/include/opencv4'
       ],
+      'link_settings':  {
+        'libraries': [
+            '-lopencv_core',
+            '-lopencv_imgproc',
+            '-lopencv_highgui',
+            '-lopencv_ml',
+            '-lopencv_video',
+            '-lopencv_features2d',
+            '-lopencv_calib3d',
+            '-lopencv_objdetect',
+            '-lopencv_imgcodecs',
+            '-lopencv_flann'
+        ],
+        'library_dirs': [
+            '../third_party/opencv/build/install/lib'
+        ]
+      },
       'sources': [
         '<@(inspector_all_sources)',
         '../include//v8-inspector-protocol.h',
