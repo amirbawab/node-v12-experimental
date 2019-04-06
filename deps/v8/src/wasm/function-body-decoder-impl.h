@@ -316,12 +316,32 @@ struct CallIndirectImmediate {
 };
 
 template <Decoder::ValidateFlag validate>
+struct CallNativeImmediate {
+  uint32_t sig_index;
+  FunctionSig* sig = nullptr;
+  uint32_t length;
+  inline CallNativeImmediate(Decoder* decoder, const byte* pc) {
+    sig_index = decoder->read_u32v<validate>(pc + 1, &length, "signature index");
+  }
+};
+
+
+template <Decoder::ValidateFlag validate>
 struct CallFunctionImmediate {
   uint32_t index;
   FunctionSig* sig = nullptr;
   uint32_t length;
   inline CallFunctionImmediate(Decoder* decoder, const byte* pc) {
     index = decoder->read_u32v<validate>(pc + 1, &length, "function index");
+  }
+};
+
+template <Decoder::ValidateFlag validate>
+struct CallNativeIndexImmediate {
+  uint32_t index;
+  uint32_t length = 1;
+  inline CallNativeIndexImmediate(Decoder* decoder, const byte* pc) {
+    index = decoder->read_u8<validate>(pc + 1, "native function index");
   }
 };
 
@@ -659,6 +679,9 @@ struct ControlBase {
   F(MemoryGrow, const Value& value, Value* result)                            \
   F(CallDirect, const CallFunctionImmediate<validate>& imm,                   \
     const Value args[], Value returns[])                                      \
+  F(CallNative, const CallNativeIndexImmediate<validate> &immIndex,           \
+    const CallNativeImmediate<validate> &immType,                             \
+    const Value args[], Value returns[])                                      \
   F(CallIndirect, const Value& index,                                         \
     const CallIndirectImmediate<validate>& imm, const Value args[],           \
     Value returns[])                                                          \
@@ -900,11 +923,28 @@ class WasmDecoder : public Decoder {
     return true;
   }
 
+  inline bool Complete(const byte* pc, CallNativeImmediate<validate>& imm) {
+    if (!VALIDATE(module_ != nullptr &&
+                  imm.sig_index < module_->signatures.size())) {
+      return false;
+    }
+    imm.sig = module_->signatures[imm.sig_index];
+    return true;
+  }
+
   inline bool Validate(const byte* pc, CallIndirectImmediate<validate>& imm) {
     if (!VALIDATE(module_ != nullptr && !module_->tables.empty())) {
       error("function table has to exist to execute call_indirect");
       return false;
     }
+    if (!Complete(pc, imm)) {
+      errorf(pc + 1, "invalid signature index: #%u", imm.sig_index);
+      return false;
+    }
+    return true;
+  }
+
+  inline bool Validate(const byte* pc, CallNativeImmediate<validate>& imm) {
     if (!Complete(pc, imm)) {
       errorf(pc + 1, "invalid signature index: #%u", imm.sig_index);
       return false;
@@ -1106,6 +1146,11 @@ class WasmDecoder : public Decoder {
         CallFunctionImmediate<validate> imm(decoder, pc);
         return 1 + imm.length;
       }
+      case kExprCallNativeFunction: {
+        CallNativeIndexImmediate<validate> immIndex(decoder, pc);
+        CallNativeImmediate<validate> immType(decoder, pc + immIndex.length);
+        return 1 + immIndex.length + immType.length;
+      }
       case kExprCallIndirect: {
         CallIndirectImmediate<validate> imm(decoder, pc);
         return 1 + imm.length;
@@ -1296,6 +1341,12 @@ class WasmDecoder : public Decoder {
       case kExprRefNull:
       case kExprMemorySize:
         return {0, 1};
+      case kExprCallNativeFunction: {
+        CallNativeIndexImmediate<validate> immIndex(this, pc);
+        CallNativeImmediate<validate> immType(this, pc + immIndex.length);
+        CHECK(Complete(pc + immIndex.length, immType));
+        return {immType.sig->parameter_count(), immType.sig->return_count()};
+      }
       case kExprCallFunction: {
         CallFunctionImmediate<validate> imm(this, pc);
         CHECK(Complete(pc, imm));
@@ -2038,6 +2089,16 @@ class WasmFullDecoder : public WasmDecoder<validate> {
           auto* result = Push(kWasmI32);
           len = 1 + imm.length;
           CALL_INTERFACE_IF_REACHABLE(CurrentMemoryPages, result);
+          break;
+        }
+        case kExprCallNativeFunction: {
+          CallNativeIndexImmediate<validate> immIndex(this, this->pc_);
+          CallNativeImmediate<validate> immType(this, this->pc_ + immIndex.length);
+          len = 1 + immIndex.length + immType.length;
+          if (!this->Validate(this->pc_, immType)) break;
+          PopArgs(immType.sig);
+          auto* returns = PushReturns(immType.sig);
+          CALL_INTERFACE_IF_REACHABLE(CallNative, immIndex, immType, args_.data(), returns);
           break;
         }
         case kExprCallFunction: {

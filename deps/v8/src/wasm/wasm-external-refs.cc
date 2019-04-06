@@ -14,6 +14,7 @@
 #include "src/utils.h"
 #include "src/v8memory.h"
 #include "src/wasm/wasm-external-refs.h"
+#include "src/wasm/wasm-sable-external-refs.h"
 
 namespace v8 {
 namespace internal {
@@ -254,6 +255,10 @@ void memory_copy_wrapper(Address dst, Address src, uint32_t size) {
 
 void memory_fill_wrapper(Address dst, uint32_t value, uint32_t size) {
   memset(reinterpret_cast<void*>(dst), value, size);
+}
+
+int32_t native_call_wrapper(uint32_t functionId, Address mem, Address data) {
+  return native_function_gateway(functionId, mem, data);
 }
 
 static WasmTrapCallbackForTesting wasm_trap_callback_for_testing = nullptr;

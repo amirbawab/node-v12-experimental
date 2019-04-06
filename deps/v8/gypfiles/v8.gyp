@@ -1699,6 +1699,8 @@
         '../src/wasm/wasm-engine.h',
         '../src/wasm/wasm-external-refs.cc',
         '../src/wasm/wasm-external-refs.h',
+        '../src/wasm/wasm-sable-external-refs.cc',
+        '../src/wasm/wasm-sable-external-refs.h',
         '../src/wasm/wasm-feature-flags.h',
         '../src/wasm/wasm-features.cc',
         '../src/wasm/wasm-features.h',
