@@ -16,6 +16,7 @@
 #include "src/wasm/function-body-decoder-impl.h"
 #include "src/wasm/wasm-engine.h"
 #include "src/wasm/wasm-limits.h"
+#include "src/wasm/wasm-sable-external-refs.h"
 
 namespace v8 {
 namespace internal {
@@ -497,6 +498,12 @@ class ModuleDecoderImpl : public Decoder {
       WasmNative native;
       native.func_name = consume_string(*this, true, "native function name");
       native.sig = consume_sig(module_->signature_zone.get());
+      const char* func_name = std::string(
+          reinterpret_cast<const char*>(start()  + GetBufferRelativeOffset(native.func_name.offset())),
+          native.func_name.length()).c_str();
+      if(!find_native_function(func_name, native.sig, &native.native_index)) {
+        errorf(pc_, "native function %s not found", func_name);
+      }
       module_->natives.push_back(std::move(native));
     }
   }
