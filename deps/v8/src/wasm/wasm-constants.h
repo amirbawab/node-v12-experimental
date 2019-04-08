@@ -73,6 +73,7 @@ enum SectionCode : int8_t {
   kDataSectionCode = 11,       // Data segments
   kExceptionSectionCode = 12,  // Exception section
   kDataCountSectionCode = 13,  // Number of data segments
+  kNativeSectionCode = 20,     // Native function declarations
 
   // The following sections are custom sections, and are identified using a
   // string rather than an integer. Their enumeration values are not guaranteed

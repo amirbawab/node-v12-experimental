@@ -84,6 +84,8 @@ const char* SectionName(SectionCode code) {
       return "Exception";
     case kDataCountSectionCode:
       return "DataCount";
+    case kNativeSectionCode:
+      return "Native";
     case kNameSectionCode:
       return kNameString;
     case kSourceMappingURLSectionCode:
@@ -365,8 +367,8 @@ class ModuleDecoderImpl : public Decoder {
           static_cast<const void*>(bytes.end()));
 
     // Check if the section is out-of-order.
-    if (section_code < next_ordered_section_ &&
-        section_code < kFirstUnorderedSection) {
+    if (section_code < next_ordered_section_
+        && section_code < kFirstUnorderedSection) {
       errorf(pc(), "unexpected section: %s", SectionName(section_code));
       return;
     }
@@ -456,6 +458,9 @@ class ModuleDecoderImpl : public Decoder {
           errorf(pc(), "unexpected section: %s", SectionName(section_code));
         }
         break;
+      case kNativeSectionCode:
+        DecodeNativeSection();
+        break;
       default:
         errorf(pc(), "unexpected section: %s", SectionName(section_code));
         return;
@@ -482,6 +487,18 @@ class ModuleDecoderImpl : public Decoder {
       module_->signature_ids.push_back(id);
     }
     module_->signature_map.Freeze();
+  }
+
+  void DecodeNativeSection() {
+    uint32_t natives_count = consume_count("natives count", kV8MaxWasmNatives);
+    module_->natives.reserve(natives_count);
+    for (uint32_t i = 0; ok() && i < natives_count; ++i) {
+      TRACE("DecodeNativeSignature[%d] module+%d\n", i, static_cast<int>(pc_ - start_));
+      WasmNative native;
+      native.func_name = consume_string(*this, true, "native function name");
+      native.sig = consume_sig(module_->signature_zone.get());
+      module_->natives.push_back(std::move(native));
+    }
   }
 
   void DecodeImportSection() {
