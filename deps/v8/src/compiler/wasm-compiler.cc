@@ -2782,6 +2782,7 @@ Node* WasmGraphBuilder::CallNative(uint32_t index, Node** args, Node** rets,
     paramStackSlotIndex += wasm::ValueTypes::ElementSizeInBytes(type);
   }
 
+  // TODO benchmark bound checking (check generated assembly)
   Node* linearMemory = BoundsCheckMemRange(mcgraph()->Int32Constant(0),
       // TODO input another size value (maybe page size?)
       mcgraph()->Int32Constant(0), position);
@@ -2795,7 +2796,8 @@ Node* WasmGraphBuilder::CallNative(uint32_t index, Node** args, Node** rets,
   };
   MachineSignature sig(1, 3, sig_types);
   Node* call = BuildCCall(&sig, function, mcgraph()->Int32Constant(native.native_index), linearMemory, stack_slot);
-  ZeroCheck32(wasm::kTrapFuncInvalid, call, position);
+  // Check if return value is zero (currently not used)
+  // ZeroCheck32(wasm::kTrapFuncInvalid, call, position);
 
   int returnStackSlotIndex = paramsStackSlotSize;
   for(int i=0; i < funcSig->return_count(); ++i) {
