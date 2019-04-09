@@ -77,10 +77,12 @@ inline void WriteValueAndAdvance(T** address, T val) {
 // use an enum to give each function
 // a unique index
 enum NativeFunction {
+  FIRST,
 #define NATIVE_FUNCTION_ENUM(function, name, type, param, ret) \
   k##function##_##type,
 FOREACH_NATIVE_FUNCTION(NATIVE_FUNCTION_ENUM, ___, ___)
 #undef NATIVE_FUNCTION_ENUM
+  LAST
 };
 
 // structure to hold the definition
@@ -112,6 +114,7 @@ struct NativeFunctionDefinition {
 // store all native functions into
 // a global array
 NativeFunctionDefinition g_functions[] = {
+    {}, // NativeFunction::FIRST
 #define ARGS_TO_VECTOR(...) {__VA_ARGS__}
 #define NATIVE_FUNCTION_ARRAY(function, name, type, param, ret) \
   {f_##function, k##function##_##type, param, ret},
@@ -183,8 +186,10 @@ bool find_native_function(const char* find_name, FunctionSig* sig, int *index) {
   return false;
 }
 
-int native_function_gateway(uint32_t functionId, Address mem, Address data) {
-  (*g_functions[functionId].func)(reinterpret_cast<byte*>(mem), reinterpret_cast<byte*>(data));
+int native_function_gateway(int funcId, Address mem, Address data) {
+  DCHECK_GT(funcId, NativeFunction::FIRST);
+  DCHECK_LT(funcId, NativeFunction::LAST);
+  (*g_functions[funcId].func)(reinterpret_cast<byte*>(mem), reinterpret_cast<byte*>(data));
 }
 
 }  // namespace wasm

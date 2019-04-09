@@ -18,7 +18,7 @@ bool find_native_function(const char* find_name, FunctionSig* sig, int *index);
 // entry point to calling a native function
 // this gateway function will call the appropriate
 // function based on the given function id
-int native_function_gateway(uint32_t functionId, Address mem, Address data);
+int native_function_gateway(int funcId, Address mem, Address data);
 
 }  // namespace wasm
 }  // namespace internal
