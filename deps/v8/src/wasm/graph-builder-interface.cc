@@ -390,17 +390,16 @@ class WasmGraphBuildingInterface {
   }
 
   void CallNative(FullDecoder* decoder,
-                    const CallNativeIndexImmediate<validate> &immIndex,
-                    const CallNativeImmediate<validate> &immType,
+                    const CallNativeFunctionImmediate<validate> &imm,
                     const Value args[], Value returns[]) {
-    int param_count = static_cast<int>(immType.sig->parameter_count());
-    int return_count = static_cast<int>(immType.sig->return_count());
+    int param_count = static_cast<int>(imm.native->sig->parameter_count());
+    int return_count = static_cast<int>(imm.native->sig->return_count());
     TFNode** arg_nodes = builder_->Buffer(param_count);
     TFNode** return_nodes = builder_->Buffer(return_count);;
     for (int i = 0; i < param_count; ++i) {
       arg_nodes[i] = args[i].node;
     }
-    BUILD(CallNative, immIndex.index, immType.sig_index, arg_nodes, return_nodes, decoder->position());
+    BUILD(CallNative, imm.index, arg_nodes, return_nodes, decoder->position());
     for (int i = 0; i < return_count; ++i) {
       returns[i].node = return_nodes[i];
     }

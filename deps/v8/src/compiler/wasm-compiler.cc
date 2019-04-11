@@ -2749,13 +2749,14 @@ Node* WasmGraphBuilder::BuildImportCall(wasm::FunctionSig* sig, Node** args,
                        untrusted_code_mitigations_ ? kRetpoline : kNoRetpoline);
 }
 
-Node* WasmGraphBuilder::CallNative(uint32_t functionIndex, uint32_t sig_index, Node** args, Node** rets,
+Node* WasmGraphBuilder::CallNative(uint32_t index, Node** args, Node** rets,
                                    wasm::WasmCodePosition position) {
   // Call a native function with a signature determined by the
   // wasm function signature. Stack will be composed of parameter values
   // followed by return values
 
-  wasm::FunctionSig* funcSig = env_->module->signatures[sig_index];
+  const wasm::WasmNative &native = env_->module->natives[index];
+  const wasm::FunctionSig* funcSig = native.sig;
   DCHECK_GE(wasm::kV8MaxWasmFunctionMultiReturns, funcSig->return_count());
   DCHECK_GE(wasm:: kV8MaxWasmFunctionParams, funcSig->parameter_count());
 
@@ -2781,6 +2782,7 @@ Node* WasmGraphBuilder::CallNative(uint32_t functionIndex, uint32_t sig_index, N
     paramStackSlotIndex += wasm::ValueTypes::ElementSizeInBytes(type);
   }
 
+  // TODO benchmark bound checking (check generated assembly)
   Node* linearMemory = BoundsCheckMemRange(mcgraph()->Int32Constant(0),
       // TODO input another size value (maybe page size?)
       mcgraph()->Int32Constant(0), position);
@@ -2788,13 +2790,14 @@ Node* WasmGraphBuilder::CallNative(uint32_t functionIndex, uint32_t sig_index, N
   Node* function = graph()->NewNode(mcgraph()->common()->ExternalConstant(ExternalReference::wasm_native_call()));
   MachineType sig_types[] = {
       MachineType::Int32(),   // wasm_native_call return type
-      MachineType::Uint32(),  // Native function id
+      MachineType::Int32(),   // Native function id value
       MachineType::Pointer(), // Linear memory address
       MachineType::Pointer()  // Stack slot address (parameter slots followed by return slots)
   };
   MachineSignature sig(1, 3, sig_types);
-  Node* call = BuildCCall(&sig, function, mcgraph()->Uint32Constant(functionIndex), linearMemory, stack_slot);
-  ZeroCheck32(wasm::kTrapFuncInvalid, call, position);
+  Node* call = BuildCCall(&sig, function, mcgraph()->Int32Constant(native.native_index), linearMemory, stack_slot);
+  // Check if return value is zero (currently not used)
+  // ZeroCheck32(wasm::kTrapFuncInvalid, call, position);
 
   int returnStackSlotIndex = paramsStackSlotSize;
   for(int i=0; i < funcSig->return_count(); ++i) {

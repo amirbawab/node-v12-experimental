@@ -1,5 +1,8 @@
 #include "src/wasm/wasm-sable-external-refs.h"
+#include "src/signature.h"
 #include "src/base/ieee754.h"
+#include <vector>
+#include <chrono>
 #include <iostream>
 
 namespace v8 {
@@ -41,29 +44,102 @@ inline void WriteValueAndAdvance(T** address, T val) {
 #define F32 float
 #define F64 double
 
-#define FOREACH_NON_TEMPLATE_FUNCTION(V) \
-    V(print_help, "Print help message", "", "", ___, 0) \
-    V(exp, "Exponential function", "x:f64", "f64", ___, 9)
+// all native functions should be declared
+// in FOREACH_NATIVE_FUNCTION_[NON_]TEMPLATE
+#define FOREACH_NATIVE_FUNCTION_NON_TEMPLATE(V, P, R) \
+  V(exp, "f64.exp", ___, P(kWasmF64), R(kWasmF64)) \
+  V(time_ms, "i64.time_ms", ___, P(), R(kWasmI64))
 
-#define FOREACH_TEMPLATE_FUNCTION(V) \
-  V(matrix_multiplication, "Matrix multiplication for i32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", I32, 1) \
-  V(matrix_multiplication, "Matrix multiplication for i64", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", I64, 2) \
-  V(matrix_multiplication, "Matrix multiplication for f32", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", F32, 3) \
-  V(matrix_multiplication, "Matrix multiplication for f64", "mat1:i32 mat2:i32 res:i32 m:i32 n:i32 p:i32", "", F64, 4) \
-  V(print_mem, "Print linear memory as i32", "offset:i32 size:i32", "", I32, 5) \
-  V(print_mem, "Print linear memory as i64", "offset:i32 size:i32", "", I64, 6) \
-  V(print_mem, "Print linear memory as f32", "offset:i32 size:i32", "", F32, 7) \
-  V(print_mem, "Print linear memory as f65", "offset:i32 size:i32", "", F64, 8)
+#define FOREACH_NATIVE_FUNCTION_TEMPLATE(V, P, R) \
+  V(matrix_multiplication, "i32.mat_mul", I32, P(kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32), R()) \
+  V(matrix_multiplication, "i64.mat_mul", I64, P(kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32), R()) \
+  V(matrix_multiplication, "f32.mat_mul", F32, P(kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32), R()) \
+  V(matrix_multiplication, "f64.mat_mul", F64, P(kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32), R()) \
+  V(print_mem, "i32.print_m", I32, P(kWasmI32, kWasmI32), R()) \
+  V(print_mem, "i64.print_m", I64, P(kWasmI32, kWasmI32), R()) \
+  V(print_mem, "f32.print_m", F32, P(kWasmI32, kWasmI32), R()) \
+  V(print_mem, "f64.print_m", F64, P(kWasmI32, kWasmI32), R()) \
+  V(print_stack, "i32.print_s", I32, P(kWasmI32), R()) \
+  V(print_stack, "i64.print_s", I64, P(kWasmI64), R()) \
+  V(print_stack, "f32.print_s", F32, P(kWasmF32), R()) \
+  V(print_stack, "f64.print_s", F64, P(kWasmF64), R())
 
-#define FOR_ALL_FUNCTIONS(V) \
-  FOREACH_NON_TEMPLATE_FUNCTION(V) \
-  FOREACH_TEMPLATE_FUNCTION(V)
+#define FOREACH_NATIVE_FUNCTION(V, P, R) \
+  FOREACH_NATIVE_FUNCTION_NON_TEMPLATE(V, P, R) \
+  FOREACH_NATIVE_FUNCTION_TEMPLATE(V, P, R)
 
-/************************
- * Matrix Multiplication
- ************************/
+// declare functions prototype
+#define NATIVE_FUNCTION_PROTOTYPE(function, name, type, param, ret) \
+  void f_##function(byte*,byte*);
+  FOREACH_NATIVE_FUNCTION_NON_TEMPLATE(NATIVE_FUNCTION_PROTOTYPE, ___, ___)
+#undef NATIVE_FUNCTION_PROTOTYPE
+
+#define NATIVE_FUNCTION_PROTOTYPE(function, name, type, param, ret) \
+  template<class T> \
+  void f_##function(byte*,byte*);
+  FOREACH_NATIVE_FUNCTION_TEMPLATE(NATIVE_FUNCTION_PROTOTYPE, ___, ___)
+#undef NATIVE_FUNCTION_PROTOTYPE
+
+// use an enum to give each function
+// a unique index
+enum NativeFunction {
+  FIRST,
+#define NATIVE_FUNCTION_ENUM(function, name, type, param, ret) \
+  k##function##_##type,
+FOREACH_NATIVE_FUNCTION(NATIVE_FUNCTION_ENUM, ___, ___)
+#undef NATIVE_FUNCTION_ENUM
+  LAST
+};
+
+// structure to hold the definition
+// of a native function
+typedef void (*native)(byte*, byte*);
+struct NativeFunctionDefinition {
+  native func;
+  NativeFunction id;
+  std::vector<ValueType> params;
+  std::vector<ValueType> rets;
+  bool sig_match(FunctionSig *sig) {
+    if(params.size() != sig->parameter_count() || rets.size() != sig->return_count()) {
+      return false;
+    }
+    for(size_t i=0; i < params.size(); i++) {
+      if(params[i] != sig->GetParam(i)) {
+        return false;
+      }
+    }
+    for(size_t i=0; i < rets.size(); i++) {
+      if(rets[i] != sig->GetReturn(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+};
+
+// store all native functions into
+// a global array
+NativeFunctionDefinition g_functions[] = {
+    {}, // NativeFunction::FIRST
+#define ARGS_TO_VECTOR(...) {__VA_ARGS__}
+#define NATIVE_FUNCTION_ARRAY(function, name, type, param, ret) \
+  {f_##function, k##function##_##type, param, ret},
+  FOREACH_NATIVE_FUNCTION_NON_TEMPLATE(NATIVE_FUNCTION_ARRAY, ARGS_TO_VECTOR, ARGS_TO_VECTOR)
+#undef NATIVE_FUNCTION_ARRAY
+
+#define NATIVE_FUNCTION_ARRAY(function, name, type, param, ret) \
+  {f_##function<type>, k##function##_##type, param, ret},
+  FOREACH_NATIVE_FUNCTION_TEMPLATE(NATIVE_FUNCTION_ARRAY, ARGS_TO_VECTOR, ARGS_TO_VECTOR)
+#undef NATIVE_FUNCTION_ARRAY
+#undef ARGS_TO_VECTOR
+};
+
+/*******************
+ * Native functions
+ ******************/
+
 template <class T>
-void call_matrix_multiplication(byte* memByte, byte* dataByte) {
+void f_matrix_multiplication(byte* memByte, byte* dataByte) {
   I32 mat1Offset = ReadValueAndAdvance<I32>(&dataByte);
   I32 mat2Offset = ReadValueAndAdvance<I32>(&dataByte);
   I32 resOffset = ReadValueAndAdvance<I32>(&dataByte);
@@ -86,11 +162,8 @@ void call_matrix_multiplication(byte* memByte, byte* dataByte) {
   }
 }
 
-/********
- * Print
- ********/
 template<class T>
-void call_print_mem(byte* memByte, byte* dataByte) {
+void f_print_mem(byte* memByte, byte* dataByte) {
   I32 offset = ReadValueAndAdvance<I32>(&dataByte);
   I32 size = ReadValueAndAdvance<I32>(&dataByte);
   for(int i=0; i < size; ++i) {
@@ -99,56 +172,40 @@ void call_print_mem(byte* memByte, byte* dataByte) {
   std::cout << std::endl;
 }
 
-/*****************
- * Math functions
- *****************/
-void call_exp(byte* memByte, byte* dataByte) {
+void f_exp(byte* memByte, byte* dataByte) {
   F64 x = ReadValueAndAdvance<F64>(&dataByte);
   WriteValue<F64>(reinterpret_cast<F64*>(dataByte), base::ieee754::exp(x));
 }
 
-/*********************
- * Print help message
- *********************/
-void call_print_help(byte* memByte, byte* dataByte) {
-  std::cout << "Native functions:" << std::endl;
-#define PRINT_MESSAGE(function, description, params, rets, type, id) \
-  std::cout << "  " << id << ": " << #function << " - " << description << std::endl; \
-  if(strlen(params) > 0) { \
-    std::cout << "        params: " << params << std::endl; \
-  } \
-  if(strlen(rets) > 0) { \
-    std::cout << "        returns: " << rets << std::endl; \
-  }
-  FOR_ALL_FUNCTIONS(PRINT_MESSAGE)
-#undef PRINT_MESSAGE
+void f_time_ms(byte* memByte, byte* dataByte) {
+  WriteValue<I64>(reinterpret_cast<I64*>(dataByte), std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count());
 }
 
-/*******************
- * Native functions
- *******************/
+template <class T>
+void f_print_stack(byte* memByte, byte* dataByte) {
+  std::cout << *(reinterpret_cast<T*>(dataByte)) << std::endl;
+}
 
-int native_function_gateway(uint32_t functionId, Address mem, Address data) {
-  // Reinterpret as byte addresses
-  byte* dataByte = reinterpret_cast<byte*>(data);
-  byte* memByte = reinterpret_cast<byte*>(mem);
-  switch (functionId) {
-#define SWITCH_CALL_SABLE_FUNCTION(function, description, params, rets, type, id) \
-    case id: \
-      call_##function<type>(memByte, dataByte); \
-      return 1;
-  FOREACH_TEMPLATE_FUNCTION(SWITCH_CALL_SABLE_FUNCTION)
-#undef SWITCH_CALL_SABLE_FUNCTION
+/*******************************
+ * External reference functions
+ *******************************/
 
-#define SWITCH_CALL_SABLE_FUNCTION(function, description, params, rets, type, id) \
-    case id: \
-      call_##function(memByte, dataByte); \
-      return 1;
-    FOREACH_NON_TEMPLATE_FUNCTION(SWITCH_CALL_SABLE_FUNCTION)
-#undef SWITCH_CALL_SABLE_FUNCTION
-      default:
-      return 0;
+bool find_native_function(const char* find_name, FunctionSig* sig, int *index) {
+#define FIND_NATIVE_FUNCTION(function, name, type, param, ret) \
+  if(strcmp(name, find_name) == 0) { \
+    *index = k##function##_##type; \
+    return g_functions[*index].sig_match(sig);\
   }
+  FOREACH_NATIVE_FUNCTION(FIND_NATIVE_FUNCTION, ___, ___)
+#undef FIND_NATIVE_FUNCTION
+  return false;
+}
+
+int native_function_gateway(int funcId, Address mem, Address data) {
+  DCHECK_GT(funcId, NativeFunction::FIRST);
+  DCHECK_LT(funcId, NativeFunction::LAST);
+  (*g_functions[funcId].func)(reinterpret_cast<byte*>(mem), reinterpret_cast<byte*>(data));
 }
 
 }  // namespace wasm
