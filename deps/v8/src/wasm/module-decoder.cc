@@ -491,6 +491,8 @@ class ModuleDecoderImpl : public Decoder {
   }
 
   void DecodeNativeSection() {
+    // initialize native environment
+    native::init_native();
     uint32_t natives_count = consume_count("natives count", kV8MaxWasmNatives);
     module_->natives.reserve(natives_count);
     for (uint32_t i = 0; ok() && i < natives_count; ++i) {
@@ -501,7 +503,7 @@ class ModuleDecoderImpl : public Decoder {
       const char* func_name = std::string(
           reinterpret_cast<const char*>(start()  + GetBufferRelativeOffset(native.func_name.offset())),
           native.func_name.length()).c_str();
-      if(!find_native_function(func_name, native.sig, &native.native_index)) {
+      if(!native::find_native_function(func_name, native.sig, &native.native_index)) {
         errorf(pc_, "native function %s not found", func_name);
       }
       module_->natives.push_back(std::move(native));
