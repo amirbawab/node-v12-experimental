@@ -71,41 +71,6 @@ template <> void Return::Set<double>(double val) {
   WriteUnalignedValue<double>(ret_add_, val);
 }
 
-/*******************
- * Native functions
- ******************/
-
-//template <class T>
-//void f_matrix_multiplication(byte* memByte, byte* dataByte) {
-//  I32 mat1Offset = ReadValueAndAdvance<I32>(&dataByte);
-//  I32 mat2Offset = ReadValueAndAdvance<I32>(&dataByte);
-//  I32 resOffset = ReadValueAndAdvance<I32>(&dataByte);
-//  I32 m = ReadValueAndAdvance<I32>(&dataByte);
-//  I32 n = ReadValueAndAdvance<I32>(&dataByte);
-//  I32 p = ReadValueAndAdvance<I32>(&dataByte);
-//
-//  T* mat1 = reinterpret_cast<T*>(memByte + mat1Offset);
-//  T* mat2 = reinterpret_cast<T*>(memByte + mat2Offset);
-//  T* res = reinterpret_cast<T*>(memByte + resOffset);
-//
-//  for(int r=0; r < m; ++r) {
-//    for(int c=0; c < p; ++c) {
-//      T resCell = 0;
-//      for(int cr=0; cr < n; ++cr) {
-//        resCell += *(mat1 + r * n + cr) * *(mat2 + cr * p + c);
-//      }
-//      WriteValue<T>(res + r * p + c, resCell);
-//    }
-//  }
-//}
-//
-//
-//void f_exp(byte* memByte, byte* dataByte) {
-//  F64 x = ReadValueAndAdvance<F64>(&dataByte);
-//  WriteValue<F64>(reinterpret_cast<F64*>(dataByte), base::ieee754::exp(x));
-//}
-//
-
 /*******************************
  * External reference functions
  *******************************/
@@ -133,7 +98,7 @@ bool find_native_function(const char* find_name, FunctionSig* sig, int *out_inde
   return true;
 }
 
-int native_function_gateway(int funcId, Address mem, Address data) {
+int native_function_gateway(int32_t funcId, Address mem, uint32_t memSize, Address data) {
   CHECK_GE(funcId, 0);
   CHECK_LT(funcId, g_func_vec.size());
   const Function &func = g_func_vec[funcId];
@@ -152,7 +117,7 @@ int native_function_gateway(int funcId, Address mem, Address data) {
     });
     byteData += ValueTypes::ElementSizeInBytes(func.rets[i]);
   }
-  (*func.func)(args, rets, Memory{mem, mem /*TODO*/});
+  (*func.func)(args, rets, Memory{reinterpret_cast<byte*>(mem), reinterpret_cast<byte*>(mem) + memSize});
   return 0;
 }
 

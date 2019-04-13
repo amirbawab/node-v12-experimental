@@ -71,7 +71,7 @@ void memory_copy_wrapper(Address dst, Address src, uint32_t size);
 
 void memory_fill_wrapper(Address dst, uint32_t value, uint32_t size);
 
-int32_t native_call_wrapper(uint32_t functionIndex, Address mem, Address data);
+int32_t native_call_wrapper(int32_t funcId, Address mem, uint32_t memSize, Address data);
 
 typedef void (*WasmTrapCallbackForTesting)();
 

@@ -257,8 +257,8 @@ void memory_fill_wrapper(Address dst, uint32_t value, uint32_t size) {
   memset(reinterpret_cast<void*>(dst), value, size);
 }
 
-int32_t native_call_wrapper(uint32_t functionId, Address mem, Address data) {
-  return native::native_function_gateway(functionId, mem, data);
+int32_t native_call_wrapper(int32_t funcId, Address mem, uint32_t memSize, Address data) {
+  return native::native_function_gateway(funcId, mem, memSize, data);
 }
 
 static WasmTrapCallbackForTesting wasm_trap_callback_for_testing = nullptr;

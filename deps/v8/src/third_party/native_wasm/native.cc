@@ -1,5 +1,5 @@
-#include "src/wasm/wasm-sable-external-refs.h"
 #include "src/third_party/native_wasm/system.h"
+#include "src/third_party/native_wasm/math.h"
 
 namespace v8 {
 namespace internal {
@@ -7,6 +7,7 @@ namespace wasm {
 namespace native {
 
 void init_native() {
+  // system
   register_native_function("i32.print_s", nf_print_stack<int32_t>, {kWasmI32}, {});
   register_native_function("i64.print_s", nf_print_stack<int64_t>, {kWasmI64}, {});
   register_native_function("f32.print_s", nf_print_stack<float>, {kWasmF32}, {});
@@ -18,6 +19,17 @@ void init_native() {
   register_native_function("i64.print_m", nf_print_mem<int64_t>, {kWasmI32, kWasmI32}, {});
   register_native_function("f32.print_m", nf_print_mem<float>, {kWasmI32, kWasmI32}, {});
   register_native_function("f64.print_m", nf_print_mem<double>, {kWasmI32, kWasmI32}, {});
+
+  // math
+  register_native_function("f64.exp", nf_exp, {kWasmF64}, {kWasmF64});
+  register_native_function("i32.mat_mul", nf_matrix_multiplication<int32_t>,
+                           {kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32}, {});
+  register_native_function("i64.mat_mul", nf_matrix_multiplication<int64_t>,
+                           {kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32}, {});
+  register_native_function("f32.mat_mul", nf_matrix_multiplication<float>,
+                           {kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32}, {});
+  register_native_function("f64.mat_mul", nf_matrix_multiplication<double>,
+                           {kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32, kWasmI32}, {});
 }
 
 }

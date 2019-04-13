@@ -16,16 +16,35 @@ namespace native {
 
 class Memory {
 public:
-  Memory(Address s, Address e) : start_(reinterpret_cast<byte*>(s)), end_(reinterpret_cast<byte*>(e)) {}
+  Memory(byte* s, byte* e) : start_(s), end_(e) {}
   template <class T>
-  void Write(int offset, T val) {
-    CHECK_LT(start_ + offset + sizeof(T), end_);
+  inline void Write(int offset, T val) {
+    if(!SafeAccess<T>(std::move(offset))) {
+      // TODO trap
+      return;
+    }
     WriteUnalignedValue<T>(reinterpret_cast<Address>(start_ + offset), val);
   }
   template <class T>
-  T Read(int offset) {
-    CHECK_LT(start_ + offset + sizeof(T), end_);
+  inline T Read(int offset) {
+    if(!SafeAccess<T>(std::move(offset))) {
+      // TODO trap
+      return 0;
+    }
     return ReadUnalignedValue<T>(reinterpret_cast<Address>(start_ + offset));
+  }
+  template <class T>
+  inline void WriteUnsafe(int offset, T val) {
+    WriteUnalignedValue<T>(reinterpret_cast<Address>(start_ + offset), val);
+  }
+  template <class T>
+  inline T ReadUnsafe(int offset) {
+    return ReadUnalignedValue<T>(reinterpret_cast<Address>(start_ + offset));
+  }
+  template <class T>
+  inline bool SafeAccess(int offset) {
+    byte* so = start_ + offset;
+    return so >= start_ && so + sizeof(T) < end_;
   }
 private:
   byte* start_ = nullptr;
@@ -67,7 +86,7 @@ bool find_native_function(const char* find_name, FunctionSig* sig, int *out_inde
 // entry point to calling a native function
 // this gateway function will call the appropriate
 // function based on the given function id
-int native_function_gateway(int funcId, Address mem, Address data);
+int native_function_gateway(int32_t funcId, Address mem, uint32_t memSize, Address data);
 
 }  // namespace native
 }  // namespace wasm
