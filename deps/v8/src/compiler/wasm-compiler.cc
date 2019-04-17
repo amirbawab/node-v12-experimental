@@ -2784,17 +2784,17 @@ Node* WasmGraphBuilder::CallNative(uint32_t index, Node** args, Node** rets,
 
   Node* linearMemory = instance_cache_->mem_start;
   Node* linearMemorySize = instance_cache_->mem_size;
-  Node* function = graph()->NewNode(mcgraph()->common()->ExternalConstant(ExternalReference::wasm_native_call()));
+  Node* function = graph()->NewNode(mcgraph()->common()->ExternalConstant((*native.func)()));
   MachineType sig_types[] = {
-      MachineType::Int32(),   // wasm_native_call return type
-      MachineType::Int32(),   // Native function id value
+//      MachineType::Int32(),   // wasm_native_call return type
+//      MachineType::Int32(),   // Native function id value
       MachineType::Pointer(), // Linear memory address
-      MachineType::Uint32(),  // Linear memory size
+//      MachineType::Uint32(),  // Linear memory size
       MachineType::Pointer()  // Stack slot address (parameter slots followed by return slots)
   };
-  MachineSignature sig(1, 4, sig_types);
-  Node* call = BuildCCall(&sig, function, mcgraph()->Int32Constant(native.native_index), linearMemory,
-      linearMemorySize, stack_slot);
+  MachineSignature sig(0, 2, sig_types);
+  Node* call = BuildCCall(&sig, function, /*mcgraph()->Int32Constant(native.native_index),*/ linearMemory,
+      /*linearMemorySize,*/ stack_slot);
   // Check if return value is zero (currently not used)
   // ZeroCheck32(wasm::kTrapFuncInvalid, call, position);
 

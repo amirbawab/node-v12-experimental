@@ -71,13 +71,19 @@ void memory_copy_wrapper(Address dst, Address src, uint32_t size);
 
 void memory_fill_wrapper(Address dst, uint32_t value, uint32_t size);
 
-int32_t native_call_wrapper(int32_t funcId, Address mem, uint32_t memSize, Address data);
-
 typedef void (*WasmTrapCallbackForTesting)();
 
 void set_trap_callback_for_testing(WasmTrapCallbackForTesting callback);
 
 void call_trap_callback_for_testing();
+
+// wasm sable external reference
+void time_ms_wrapper(Address, Address);
+void exp_wrapper(Address, Address);
+template <class T> void matrix_multiplication_wrapper(Address, Address);
+template <class T> void print_stack_wrapper(Address, Address);
+template <class T> void print_memory_wrapper(Address, Address);
+template <class T> void add_wrapper(Address, Address);
 
 }  // namespace wasm
 }  // namespace internal

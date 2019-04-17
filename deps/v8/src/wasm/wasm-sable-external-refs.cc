@@ -1,127 +1,175 @@
 #include "src/wasm/wasm-sable-external-refs.h"
 #include "src/signature.h"
+#include "src/base/ieee754.h"
+#include <vector>
 #include <iostream>
-#include <map>
+#include <chrono>
 
 namespace v8 {
 namespace internal {
 namespace wasm {
-namespace native {
 
-struct Function {
-  std::string name;
-  native_t func;
-  std::vector<ValueType> params;
-  std::vector<ValueType> rets;
-  bool sig_match(FunctionSig *sig) {
-    if(params.size() != sig->parameter_count() || rets.size() != sig->return_count()) {
-      return false;
-    }
-    for(size_t i=0; i < params.size(); i++) {
-      if(params[i] != sig->GetParam(i)) {
-        return false;
+/********************
+ * Helper functions
+ ********************/
+template <class T>
+inline T ReadValue(T* address) {
+  return ReadUnalignedValue<T>(reinterpret_cast<Address>(address));
+}
+
+template <class T>
+inline T ReadValueAndAdvance(T** address) {
+  T val = ReadValue<T>(*address);
+  (*address)++;
+  return val;
+}
+
+template <class T>
+inline void WriteValue(T* address, T val) {
+  WriteUnalignedValue<T>(reinterpret_cast<Address>(address), val);
+}
+
+template <class T>
+inline void WriteValueAndAdvance(T** address, T val) {
+  WriteValue(*address, val);
+  (*address)++;
+}
+
+/*******************
+ * Native functions
+ ******************/
+
+template <class T>
+void matrix_multiplication_wrapper(Address mem, Address data) {
+  I32* stack = reinterpret_cast<I32*>(data);
+  byte* lmem = reinterpret_cast<byte*>(mem);
+
+  I32 mat1Offset = *(stack);
+  I32 mat2Offset = *(stack += 1);
+  I32 resOffset = *(stack += 1);
+  I32 m = *(stack += 1);
+  I32 n = *(stack += 1);
+  I32 p = *(stack += 1);
+
+  T* mat1 = reinterpret_cast<T*>(lmem + mat1Offset);
+  T* mat2 = reinterpret_cast<T*>(lmem + mat2Offset);
+  T* res = reinterpret_cast<T*>(lmem + resOffset);
+
+  for(int r=0; r < m; ++r) {
+    for(int c=0; c < p; ++c) {
+      T resCell = 0;
+      for(int cr=0; cr < n; ++cr) {
+        resCell += *(mat1 + r * n + cr) * *(mat2 + cr * p + c);
       }
+      *(res + r * p + c) = resCell;
     }
-    for(size_t i=0; i < rets.size(); i++) {
-      if(rets[i] != sig->GetReturn(i)) {
-        return false;
-      }
-    }
-    return true;
   }
-};
+}
+template void matrix_multiplication_wrapper<I32>(Address, Address);
+template void matrix_multiplication_wrapper<I64>(Address, Address);
+template void matrix_multiplication_wrapper<F32>(Address, Address);
+template void matrix_multiplication_wrapper<F64>(Address, Address);
 
-template <> int32_t Argument::Get<int32_t>() const {
-  CHECK_EQ(type_, kWasmI32);
-  return ReadUnalignedValue<int32_t>(val_add_);
+template<class T>
+void print_memory_wrapper(Address mem, Address data) {
+  I32* stack = reinterpret_cast<I32*>(data);
+
+  I32 offset = ReadValueAndAdvance<I32>(&stack);
+  I32 size = ReadValueAndAdvance<I32>(&stack);
+  T* lmem = reinterpret_cast<T*>(reinterpret_cast<byte*>(mem) + offset);
+  for(int i=0; i < size; ++i) {
+    std::cout << ReadValue(lmem + i) << " ";
+  }
+  std::cout << std::endl;
+}
+template void print_memory_wrapper<I32>(Address, Address);
+template void print_memory_wrapper<I64>(Address, Address);
+template void print_memory_wrapper<F32>(Address, Address);
+template void print_memory_wrapper<F64>(Address, Address);
+
+void exp_wrapper(Address mem, Address data) {
+  F64 x = ReadValueAndAdvance<F64>(reinterpret_cast<F64**>(&data));
+  WriteValue<F64>(reinterpret_cast<F64*>(data), base::ieee754::exp(x));
 }
 
-template <> int64_t Argument::Get<int64_t>() const {
-  CHECK_EQ(type_, kWasmI64);
-  return ReadUnalignedValue<int64_t>(val_add_);
+template <class T>
+void add_wrapper(Address mem, Address data) {
+  T* stack = reinterpret_cast<T*>(data);
+  T lhs = ReadValueAndAdvance<T>(&stack);
+  T rhs = ReadValueAndAdvance<T>(&stack);
+  WriteValue<T>(stack, lhs + rhs);
+}
+template void add_wrapper<I32>(Address, Address);
+
+void time_ms_wrapper(Address mem, Address data) {
+  WriteValue<I64>(reinterpret_cast<I64*>(data), std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count());
 }
 
-template <> float Argument::Get<float>() const {
-  CHECK_EQ(type_, kWasmF32);
-  return ReadUnalignedValue<float>(val_add_);
+template <class T>
+void print_stack_wrapper(Address mem, Address data) {
+  std::cout << ReadValue<T>(reinterpret_cast<T*>(data)) << std::endl;
 }
-
-template <> double Argument::Get<double>() const {
-  CHECK_EQ(type_, kWasmF64);
-  return ReadUnalignedValue<double>(val_add_);
-}
-
-template <> void Return::Set<int32_t>(int32_t val) {
-  CHECK_EQ(type_, kWasmI32);
-  WriteUnalignedValue<int32_t>(ret_add_, val);
-}
-
-template <> void Return::Set<int64_t>(int64_t val) {
-  CHECK_EQ(type_, kWasmI64);
-  WriteUnalignedValue<int64_t>(ret_add_, val);
-}
-
-template <> void Return::Set<float>(float val) {
-  CHECK_EQ(type_, kWasmF32);
-  WriteUnalignedValue<float>(ret_add_, val);
-}
-
-template <> void Return::Set<double>(double val) {
-  CHECK_EQ(type_, kWasmF64);
-  WriteUnalignedValue<double>(ret_add_, val);
-}
+template void print_stack_wrapper<I32>(Address, Address);
+template void print_stack_wrapper<I64>(Address, Address);
+template void print_stack_wrapper<F32>(Address, Address);
+template void print_stack_wrapper<F64>(Address, Address);
 
 /*******************************
  * External reference functions
  *******************************/
-std::vector<Function> g_func_vec;
-std::map<std::string, size_t> g_func_map;
 
-bool register_native_function(std::string name, native_t func,
-                              std::vector<ValueType> args, std::vector<ValueType> rets) {
-  if(g_func_map.find(name) != g_func_map.end()) {
-    return false;
+bool find_native_function(const char* find_name, FunctionSig* sig, ExternalReference(**ref)()) {
+#define ARGS_TO_VECTOR(...) {__VA_ARGS__}
+#define FIND_NATIVE_FUNCTION(function, name, type, p, r) \
+  if(strcmp(name, find_name) == 0) { \
+    std::vector<ValueType> params = p; \
+    std::vector<ValueType> rets = r; \
+    *ref = ExternalReference::wasm_##function; \
+    if(params.size() != sig->parameter_count() || rets.size() != sig->return_count()) { \
+      return false; \
+    } \
+    for(size_t i=0; i < params.size(); i++) { \
+      if(params[i] != sig->GetParam(i)) { \
+        return false; \
+      } \
+    } \
+    for(size_t i=0; i < rets.size(); i++) { \
+      if(rets[i] != sig->GetReturn(i)) { \
+        return false; \
+      } \
+    } \
+    return true; \
   }
-  g_func_map[name] = g_func_vec.size();
-  g_func_vec.emplace_back(Function{
-    std::move(name), std::move(func), std::move(args), std::move(rets)
-  });
-  return true;
+FOREACH_NATIVE_FUNCTION_NON_TEMPLATE(FIND_NATIVE_FUNCTION, ARGS_TO_VECTOR, ARGS_TO_VECTOR)
+#undef FIND_NATIVE_FUNCTION
+
+#define FIND_NATIVE_FUNCTION(function, name, type, p, r) \
+  if(strcmp(name, find_name) == 0) { \
+    std::vector<ValueType> params = p; \
+    std::vector<ValueType> rets = r; \
+    *ref = ExternalReference::wasm_##function##_##type; \
+    if(params.size() != sig->parameter_count() || rets.size() != sig->return_count()) { \
+      return false; \
+    } \
+    for(size_t i=0; i < params.size(); i++) { \
+      if(params[i] != sig->GetParam(i)) { \
+        return false; \
+      } \
+    } \
+    for(size_t i=0; i < rets.size(); i++) { \
+      if(rets[i] != sig->GetReturn(i)) { \
+        return false; \
+      } \
+    } \
+    return true; \
+  }
+FOREACH_NATIVE_FUNCTION_TEMPLATE(FIND_NATIVE_FUNCTION, ARGS_TO_VECTOR, ARGS_TO_VECTOR)
+#undef FIND_NATIVE_FUNCTION
+#undef ARGS_TO_VECTOR
+  return false;
 }
 
-bool find_native_function(const char* find_name, FunctionSig* sig, int *out_index) {
-  int funcId;
-  if(g_func_map.find(find_name) == g_func_map.end() || !g_func_vec[funcId = g_func_map[find_name]].sig_match(sig)) {
-    return false;
-  }
-  *out_index = funcId;
-  return true;
-}
-
-int native_function_gateway(int32_t funcId, Address mem, uint32_t memSize, Address data) {
-  CHECK_GE(funcId, 0);
-  CHECK_LT(funcId, g_func_vec.size());
-  const Function &func = g_func_vec[funcId];
-  arg_vec_t args;
-  ret_vec_t rets;
-  byte* byteData = reinterpret_cast<byte*>(data);
-  for(size_t i=0; i < func.params.size(); ++i) {
-    args.emplace_back(Argument{
-        reinterpret_cast<Address>(byteData), func.params[i]
-    });
-    byteData += ValueTypes::ElementSizeInBytes(func.params[i]);
-  }
-  for(size_t i=0; i < func.rets.size(); ++i) {
-    rets.emplace_back(Return{
-        reinterpret_cast<Address>(byteData), func.rets[i]
-    });
-    byteData += ValueTypes::ElementSizeInBytes(func.rets[i]);
-  }
-  (*func.func)(args, rets, Memory{reinterpret_cast<byte*>(mem), reinterpret_cast<byte*>(mem) + memSize});
-  return 0;
-}
-
-}  // namespace native
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8

@@ -74,6 +74,23 @@ class StatsCounter;
     "IsolateData::fast_c_call_caller_pc_address")                              \
   EXTERNAL_REFERENCE_LIST_NON_INTERPRETED_REGEXP(V)
 
+#define EXTERNAL_REFERENCE_LIST_WASM(V) \
+V(wasm_time_ms, "wasm::time_ms") \
+V(wasm_exp, "wasm::exp") \
+V(wasm_add_I32, "wasm::add_I32") \
+V(wasm_matrix_multiplication_I32, "wasm::matrix_multiplication_I32") \
+V(wasm_matrix_multiplication_I64, "wasm::matrix_multiplication_I64") \
+V(wasm_matrix_multiplication_F32, "wasm::matrix_multiplication_F32") \
+V(wasm_matrix_multiplication_F64, "wasm::matrix_multiplication_F64") \
+V(wasm_print_memory_I32, "wasm::print_memory_I32") \
+V(wasm_print_memory_I64, "wasm::print_memory_I64") \
+V(wasm_print_memory_F32, "wasm::print_memory_F32") \
+V(wasm_print_memory_F64, "wasm::print_memory_F64") \
+V(wasm_print_stack_I32, "wasm::print_stack_I32") \
+V(wasm_print_stack_I64, "wasm::print_stack_I64") \
+V(wasm_print_stack_F32, "wasm::print_stack_F32") \
+V(wasm_print_stack_F64, "wasm::print_stack_F64") \
+
 #define EXTERNAL_REFERENCE_LIST(V)                                            \
   V(abort_with_reason, "abort_with_reason")                                   \
   V(address_of_double_abs_constant, "double_absolute_constant")               \
@@ -183,7 +200,6 @@ class StatsCounter;
   V(wasm_word64_popcnt, "wasm::word64_popcnt")                                \
   V(wasm_memory_copy, "wasm::memory_copy")                                    \
   V(wasm_memory_fill, "wasm::memory_fill")                                    \
-  V(wasm_native_call, "wasm::native_call")                                    \
   V(call_enqueue_microtask_function, "MicrotaskQueue::CallEnqueueMicrotask")  \
   V(call_enter_context_function, "call_enter_context_function")               \
   V(atomic_pair_load_function, "atomic_pair_load_function")                   \
@@ -196,7 +212,8 @@ class StatsCounter;
   V(atomic_pair_exchange_function, "atomic_pair_exchange_function")           \
   V(atomic_pair_compare_exchange_function,                                    \
     "atomic_pair_compare_exchange_function")                                  \
-  EXTERNAL_REFERENCE_LIST_INTL(V)
+  EXTERNAL_REFERENCE_LIST_INTL(V)                                             \
+  EXTERNAL_REFERENCE_LIST_WASM(V)
 
 #ifndef V8_INTERPRETED_REGEXP
 #define EXTERNAL_REFERENCE_LIST_NON_INTERPRETED_REGEXP(V)                     \
