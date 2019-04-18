@@ -85,6 +85,21 @@ template <class T> void print_stack_wrapper(Address, Address);
 template <class T> void print_memory_wrapper(Address, Address);
 template <class T> void add_wrapper(Address, Address);
 
+// benchmark functions
+void do_nothing_wrapper(Address mem, Address data);
+void do_nothing_i_wrapper(Address mem, Address data);
+void do_nothing_l_wrapper(Address mem, Address data);
+void do_nothing_f_wrapper(Address mem, Address data);
+void do_nothing_d_wrapper(Address mem, Address data);
+void do_nothing_I_wrapper(Address mem, Address data);
+void do_nothing_L_wrapper(Address mem, Address data);
+void do_nothing_F_wrapper(Address mem, Address data);
+void do_nothing_D_wrapper(Address mem, Address data);
+void do_nothing_iI_wrapper(Address mem, Address data);
+void do_nothing_lL_wrapper(Address mem, Address data);
+void do_nothing_fF_wrapper(Address mem, Address data);
+void do_nothing_dD_wrapper(Address mem, Address data);
+
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8

@@ -322,6 +322,21 @@ FUNCTION_REFERENCE(wasm_print_stack_I64, wasm::print_stack_wrapper<int64_t>)
 FUNCTION_REFERENCE(wasm_print_stack_F32, wasm::print_stack_wrapper<float>)
 FUNCTION_REFERENCE(wasm_print_stack_F64, wasm::print_stack_wrapper<double>)
 
+// benchmark functions
+FUNCTION_REFERENCE(wasm_do_nothing, wasm::do_nothing_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_i, wasm::do_nothing_i_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_l, wasm::do_nothing_l_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_f, wasm::do_nothing_f_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_d, wasm::do_nothing_d_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_I, wasm::do_nothing_I_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_L, wasm::do_nothing_L_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_F, wasm::do_nothing_F_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_D, wasm::do_nothing_D_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_iI, wasm::do_nothing_iI_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_lL, wasm::do_nothing_lL_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_fF, wasm::do_nothing_fF_wrapper)
+FUNCTION_REFERENCE(wasm_do_nothing_dD, wasm::do_nothing_dD_wrapper)
+
 static void f64_acos_wrapper(Address data) {
   double input = ReadUnalignedValue<double>(data);
   WriteUnalignedValue(data, base::ieee754::acos(input));

@@ -45,6 +45,19 @@ bool find_native_function(const char* find_name, FunctionSig* sig, ExternalRefer
 #define FOREACH_NATIVE_FUNCTION_NON_TEMPLATE(V, P, R) \
   V(time_ms, "i64.time_ms", ___, P(), R(kWasmI64)) \
   V(exp, "f64.exp", ___, P(kWasmF64), R(kWasmF64)) \
+  V(do_nothing, "do_nothing", ___, P(), R()) \
+  V(do_nothing_i, "do_nothing_i", ___, P(kWasmI32), R()) \
+  V(do_nothing_l, "do_nothing_l", ___, P(kWasmI64), R()) \
+  V(do_nothing_f, "do_nothing_f", ___, P(kWasmF32), R()) \
+  V(do_nothing_d, "do_nothing_d", ___, P(kWasmF64), R()) \
+  V(do_nothing_I, "do_nothing_I", ___, P(), R(kWasmI32)) \
+  V(do_nothing_L, "do_nothing_L", ___, P(), R(kWasmI64)) \
+  V(do_nothing_F, "do_nothing_F", ___, P(), R(kWasmF32)) \
+  V(do_nothing_D, "do_nothing_D", ___, P(), R(kWasmF64)) \
+  V(do_nothing_iI, "do_nothing_iI", ___, P(kWasmI32), R(kWasmI32)) \
+  V(do_nothing_lL, "do_nothing_lL", ___, P(kWasmI64), R(kWasmI64)) \
+  V(do_nothing_fF, "do_nothing_fF", ___, P(kWasmF32), R(kWasmF32)) \
+  V(do_nothing_dD, "do_nothing_dD", ___, P(kWasmF64), R(kWasmF64)) \
 
 #define FOREACH_NATIVE_FUNCTION_TEMPLATE(V, P, R) \
   V(add, "i32.add", I32, P(kWasmI32, kWasmI32), R(kWasmI32)) \

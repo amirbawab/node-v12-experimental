@@ -115,6 +115,23 @@ template void print_stack_wrapper<I64>(Address, Address);
 template void print_stack_wrapper<F32>(Address, Address);
 template void print_stack_wrapper<F64>(Address, Address);
 
+/**********************
+ * Benchmark functions
+ *********************/
+void do_nothing_wrapper(Address mem, Address data) {}
+void do_nothing_i_wrapper(Address mem, Address data) {}
+void do_nothing_l_wrapper(Address mem, Address data) {}
+void do_nothing_f_wrapper(Address mem, Address data) {}
+void do_nothing_d_wrapper(Address mem, Address data) {}
+void do_nothing_I_wrapper(Address mem, Address data) {}
+void do_nothing_L_wrapper(Address mem, Address data) {}
+void do_nothing_F_wrapper(Address mem, Address data) {}
+void do_nothing_D_wrapper(Address mem, Address data) {}
+void do_nothing_iI_wrapper(Address mem, Address data) {}
+void do_nothing_lL_wrapper(Address mem, Address data) {}
+void do_nothing_fF_wrapper(Address mem, Address data) {}
+void do_nothing_dD_wrapper(Address mem, Address data) {}
+
 /*******************************
  * External reference functions
  *******************************/

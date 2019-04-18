@@ -90,6 +90,20 @@ V(wasm_print_stack_I32, "wasm::print_stack_I32") \
 V(wasm_print_stack_I64, "wasm::print_stack_I64") \
 V(wasm_print_stack_F32, "wasm::print_stack_F32") \
 V(wasm_print_stack_F64, "wasm::print_stack_F64") \
+/*benchmark functions*/ \
+V(wasm_do_nothing, "wasm::do_nothing") \
+V(wasm_do_nothing_i, "wasm::do_nothing_i") \
+V(wasm_do_nothing_l, "wasm::do_nothing_l") \
+V(wasm_do_nothing_f, "wasm::do_nothing_f") \
+V(wasm_do_nothing_d, "wasm::do_nothing_d") \
+V(wasm_do_nothing_I, "wasm::do_nothing_I") \
+V(wasm_do_nothing_L, "wasm::do_nothing_L") \
+V(wasm_do_nothing_F, "wasm::do_nothing_F") \
+V(wasm_do_nothing_D, "wasm::do_nothing_D") \
+V(wasm_do_nothing_iI, "wasm::do_nothing_iI") \
+V(wasm_do_nothing_lL, "wasm::do_nothing_lL") \
+V(wasm_do_nothing_fF, "wasm::do_nothing_fF") \
+V(wasm_do_nothing_dD, "wasm::do_nothing_dD") \
 
 #define EXTERNAL_REFERENCE_LIST(V)                                            \
   V(abort_with_reason, "abort_with_reason")                                   \

@@ -768,4 +768,8 @@ namespace test {
     assert(w.c == 1);
     assert(w.d == 2);
   }
+
+  macro PrintHelloWorld() {
+    Print('Hello world!');
+  }
 }
