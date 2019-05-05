@@ -53,7 +53,8 @@ bool IsJSCompatibleSignature(const FunctionSig* sig, bool hasBigIntFeature);
   V(I64Const, 0x42, _)         \
   V(F32Const, 0x43, _)         \
   V(F64Const, 0x44, _)         \
-  V(RefNull, 0xd0, _)
+  V(RefNull, 0xd0, _)          \
+  V(Offset32, 0xf2, _)
 
 // Load memory expressions.
 #define FOREACH_LOAD_MEM_OPCODE(V) \

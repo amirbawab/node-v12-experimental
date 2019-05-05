@@ -434,6 +434,14 @@ void LiftoffAssembler::emit_i32_add(Register dst, Register lhs, Register rhs) {
   }
 }
 
+void LiftoffAssembler::emit_offset32(Register dst, Register base, Register index, ScaleFactor scale) {
+  leal(dst, Operand(base, index, scale, 0));
+}
+
+void LiftoffAssembler::emit_offset32(Register dst, int32_t base, Register index, ScaleFactor scale) {
+  leal(dst, Operand(index, scale, base));
+}
+
 void LiftoffAssembler::emit_i32_sub(Register dst, Register lhs, Register rhs) {
   if (dst != rhs) {
     // Default path.
