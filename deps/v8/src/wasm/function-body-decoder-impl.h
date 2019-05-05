@@ -709,7 +709,9 @@ struct ControlBase {
     const Value& value, const Value& size)                                    \
   F(TableInit, const TableInitImmediate<validate>& imm, Vector<Value> args)   \
   F(TableDrop, const TableDropImmediate<validate>& imm)                       \
-  F(TableCopy, const TableIndexImmediate<validate>& imm, Vector<Value> args)
+  F(TableCopy, const TableIndexImmediate<validate>& imm, Vector<Value> args)  \
+  F(Offset32, const Value& base, const Value& index, const Value& scale,      \
+    Value* result)
 
 // Generic Wasm bytecode decoder with utilities for decoding immediates,
 // lengths, etc.
@@ -1314,6 +1316,7 @@ class WasmDecoder : public Decoder {
 #define DECLARE_OPCODE_CASE(name, opcode, sig) case kExpr##name:
     // clang-format off
     switch (opcode) {
+      case kExprOffset32:
       case kExprSelect:
         return {3, 1};
       FOREACH_STORE_MEM_OPCODE(DECLARE_OPCODE_CASE)
@@ -1821,6 +1824,14 @@ class WasmFullDecoder : public WasmDecoder<validate> {
           auto tval = Pop(0, fval.type);
           auto* result = Push(tval.type == kWasmVar ? fval.type : tval.type);
           CALL_INTERFACE_IF_REACHABLE(Select, cond, fval, tval, result);
+          break;
+        }
+        case kExprOffset32: {
+          auto scale = Pop(2, kWasmI32);
+          auto index = Pop(1, kWasmI32);
+          auto base = Pop(0, kWasmI32);
+          auto* result = Push(kWasmI32);
+          CALL_INTERFACE_IF_REACHABLE(Offset32, base, index, scale, result);
           break;
         }
         case kExprBr: {

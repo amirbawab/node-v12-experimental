@@ -290,6 +290,12 @@ class WasmGraphBuildingInterface {
   void Unreachable(FullDecoder* decoder) {
     BUILD(Unreachable, decoder->position());
   }
+  
+  void Offset32(FullDecoder* decoder, const Value& base, const Value& index, const Value& scale, 
+          Value* result) {
+    auto mulNode = BUILD(Binop, kExprI32Mul, index.node, scale.node, decoder->position());
+    result->node = BUILD(Binop, kExprI32Add, base.node, mulNode, decoder->position());
+  }
 
   void Select(FullDecoder* decoder, const Value& cond, const Value& fval,
               const Value& tval, Value* result) {
