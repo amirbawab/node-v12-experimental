@@ -501,7 +501,7 @@ class ModuleDecoderImpl : public Decoder {
       const char* func_name = std::string(
           reinterpret_cast<const char*>(start()  + GetBufferRelativeOffset(native.func_name.offset())),
           native.func_name.length()).c_str();
-      if(!find_native_function(func_name, native.sig, &native.native_index)) {
+      if(!find_native_function(func_name, native.sig, &native.func)) {
         errorf(pc_, "native function %s not found", func_name);
       }
       module_->natives.push_back(std::move(native));

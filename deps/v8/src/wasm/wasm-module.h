@@ -146,6 +146,7 @@ struct WasmNative {
   WireBytesRef func_name;  // native function name.
   FunctionSig* sig;        // native function signature.
   int native_index;        // native function enum value.
+  ExternalReference (*func)();        // native function enum value.
 };
 
 enum ModuleOrigin : uint8_t { kWasmOrigin, kAsmJsOrigin };

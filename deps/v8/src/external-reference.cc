@@ -305,7 +305,22 @@ FUNCTION_REFERENCE(wasm_word32_rol, wasm::word32_rol_wrapper)
 FUNCTION_REFERENCE(wasm_word32_ror, wasm::word32_ror_wrapper)
 FUNCTION_REFERENCE(wasm_memory_copy, wasm::memory_copy_wrapper)
 FUNCTION_REFERENCE(wasm_memory_fill, wasm::memory_fill_wrapper)
-FUNCTION_REFERENCE(wasm_native_call, wasm::native_call_wrapper)
+
+FUNCTION_REFERENCE(wasm_time_ms, wasm::time_ms_wrapper)
+FUNCTION_REFERENCE(wasm_exp, wasm::exp_wrapper)
+FUNCTION_REFERENCE(wasm_add_I32, wasm::add_wrapper<int32_t>)
+FUNCTION_REFERENCE(wasm_matrix_multiplication_I32, wasm::matrix_multiplication_wrapper<int32_t>)
+FUNCTION_REFERENCE(wasm_matrix_multiplication_I64, wasm::matrix_multiplication_wrapper<int64_t>)
+FUNCTION_REFERENCE(wasm_matrix_multiplication_F32, wasm::matrix_multiplication_wrapper<float>)
+FUNCTION_REFERENCE(wasm_matrix_multiplication_F64, wasm::matrix_multiplication_wrapper<double>)
+FUNCTION_REFERENCE(wasm_print_memory_I32, wasm::print_memory_wrapper<int32_t>)
+FUNCTION_REFERENCE(wasm_print_memory_I64, wasm::print_memory_wrapper<int64_t>)
+FUNCTION_REFERENCE(wasm_print_memory_F32, wasm::print_memory_wrapper<float>)
+FUNCTION_REFERENCE(wasm_print_memory_F64, wasm::print_memory_wrapper<double>)
+FUNCTION_REFERENCE(wasm_print_stack_I32, wasm::print_stack_wrapper<int32_t>)
+FUNCTION_REFERENCE(wasm_print_stack_I64, wasm::print_stack_wrapper<int64_t>)
+FUNCTION_REFERENCE(wasm_print_stack_F32, wasm::print_stack_wrapper<float>)
+FUNCTION_REFERENCE(wasm_print_stack_F64, wasm::print_stack_wrapper<double>)
 
 static void f64_acos_wrapper(Address data) {
   double input = ReadUnalignedValue<double>(data);
